@@ -1,0 +1,42 @@
+#define BLYNK_TEMPLATE_ID "TMPL2J16nhP5L"
+#define BLYNK_TEMPLATE_NAME "Ldr"
+#define BLYNK_AUTH_TOKEN "gcfkpa-3EsyAohVpdoKO1idiuk1L8mx_"
+
+#include <WiFi.h>
+#include <BlynkSimpleEsp32.h>
+
+// WiFi credentials
+char ssid[] = "Yasminaa";
+char pass[] = "12341234";
+
+// LDR pin
+#define LDR_PIN 34
+
+BlynkTimer timer;
+
+// Send LDR value to Blynk
+void sendLDR() {
+  int ldrValue = analogRead(LDR_PIN);
+
+  Serial.print("LDR Value: ");
+  Serial.println(ldrValue);
+
+  Blynk.virtualWrite(V0, ldrValue);  // send to datastream V0
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LDR_PIN, INPUT);
+
+  Serial.println("Starting...");
+
+  // Connect to Blynk (this also connects WiFi)
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+
+  timer.setInterval(2000L, sendLDR); // every 2 seconds
+}
+
+void loop() {
+  Blynk.run();
+  timer.run();
+}
