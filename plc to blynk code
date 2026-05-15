@@ -1,0 +1,90 @@
+import win32ui
+import dde
+import requests
+import time
+
+# =========================
+# BLYNK CONFIG
+# =========================
+TOKEN = "gcfkpa-3EsyAohVpdoKO1idiuk1L8mx_"
+
+def send_to_blynk(pin, value):
+    try:
+        url = f"https://blynk.cloud/external/api/update?token={TOKEN}&{pin}={value}"
+        requests.get(url, timeout=5)
+    except Exception as e:
+        print("Failed to send", pin, e)
+
+# =========================
+# CONNECT TO RSLINX (DDE)
+# =========================
+server = dde.CreateServer()
+server.Create("PythonClient")
+
+conversation = dde.CreateConversation(server)
+conversation.ConnectTo("RSLINX", "YASMEEN")
+
+print("Connected to PLC & Blynk")
+
+# =========================
+# SAFE READ FUNCTION
+# =========================
+def read_tag(tag):
+    try:
+        value = conversation.Request(tag)
+        return str(value).strip()
+    except Exception as e:
+        print("Read error:", tag, e)
+        return "0"
+
+# =========================
+# MAIN LOOP
+# =========================
+while True:
+
+    try:
+
+        # -------- READ INPUTS --------
+        start_btn = read_tag("I:0/0")
+        stop_btn  = read_tag("I:0/1")
+
+        car_in  = read_tag("I:0/2")
+        car_out = read_tag("I:0/3")
+
+        # -------- READ OUTPUTS --------
+        open_spot_led  = read_tag("O:0/2")
+        taken_spot_led = read_tag("O:0/0")
+        parking_light  = read_tag("O:0/3")
+
+        # -------- READ COUNTER --------
+        car_count = read_tag("C5:0.ACC")
+
+        # -------- DEBUG PRINT --------
+        print(
+            "START:", start_btn,
+            "STOP:", stop_btn,
+            "| IN:", car_in,
+            "OUT:", car_out,
+            "| Open:", open_spot_led,
+            "Taken:", taken_spot_led,
+            "Light:", parking_light,
+            "| Count:", car_count
+        )
+
+        # -------- SEND TO BLYNK --------
+        send_to_blynk("V6", start_btn)
+        send_to_blynk("V7", stop_btn)
+
+        send_to_blynk("V1", car_in)
+        send_to_blynk("V2", car_out)
+
+        send_to_blynk("V3", open_spot_led)
+        send_to_blynk("V4", taken_spot_led)
+        send_to_blynk("V5", parking_light)
+
+        send_to_blynk("V0", car_count)
+
+    except Exception as e:
+        print("Main error:", e)
+
+    time.sleep(1)
